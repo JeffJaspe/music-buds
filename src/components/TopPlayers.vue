@@ -1,105 +1,104 @@
-<template>
-  <div class="p-4 bg-gray-900 text-white min-h-screen">
-    <h1 class="text-2xl font-bold mb-4">🏆 Top Dota 2 Players by Rank & Server</h1>
+import React, { useEffect, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import axios from "axios";
+import { Badge } from "@/components/ui/badge";
 
-    <div class="flex space-x-4 mb-6">
-      <button
-        v-for="srv in servers"
-        :key="srv"
-        :class="[
-          'px-4 py-2 rounded-full transition',
-          currentServer === srv
-            ? 'bg-purple-600 text-white shadow-lg'
-            : 'bg-gray-700 hover:bg-purple-500',
-        ]"
-        @click="currentServer = srv"
-      >
-        {{ srv }}
-      </button>
-    </div>
+const divisions = ["americas", "europe", "se_asia", "china"];
+const rankMap = {
+  10: "Herald",
+  20: "Guardian",
+  30: "Crusader",
+  40: "Archon",
+  50: "Legend",
+  60: "Ancient",
+  70: "Divine",
+  80: "Immortal",
+};
 
-    <div class="flex space-x-4 mb-4">
-      <button
-        v-for="rank in ranks"
-        :key="rank"
-        :class="[
-          'px-4 py-2 rounded-full transition',
-          currentRank === rank
-            ? 'bg-pink-500 text-white shadow'
-            : 'bg-gray-600 hover:bg-pink-400',
-        ]"
-        @click="currentRank = rank"
-      >
-        {{ rank }}
-      </button>
-    </div>
+const rankColors = {
+  Herald: "bg-gray-500",
+  Guardian: "bg-green-500",
+  Crusader: "bg-blue-500",
+  Archon: "bg-indigo-500",
+  Legend: "bg-yellow-500",
+  Ancient: "bg-orange-500",
+  Divine: "bg-red-500",
+  Immortal: "bg-purple-700",
+};
 
-    <div class="overflow-x-auto bg-gray-800 rounded-lg p-4">
-      <table class="table-auto w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-gray-700">
-            <th class="px-4 py-2">Player Name</th>
-            <th class="px-4 py-2">Last Match</th>
-            <th class="px-4 py-2">Spam Hero</th>
-            <th class="px-4 py-2">Win Streak</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="player in filteredPlayers"
-            :key="player.account_id"
-            class="hover:bg-gray-600 transition"
+export default function DotaLeaderboard() {
+  const [data, setData] = useState({});
+
+  useEffect(() => {
+    divisions.forEach(async (division) => {
+      try {
+        const res = await axios.get(
+          `https://api.opendota.com/api/leaderboards?division=${division}`
+        );
+        setData((prev) => ({ ...prev, [division]: res.data.leaderboard || [] }));
+      } catch (err) {
+        console.error(`Error fetching ${division}`, err);
+      }
+    });
+  }, []);
+
+  const groupByRank = (players) => {
+    const grouped = {};
+    players.forEach((player) => {
+      const tier = Math.floor((player.rank_tier || 0) / 10) * 10;
+      const label = rankMap[tier] || "Unranked";
+      if (!grouped[label]) grouped[label] = [];
+      grouped[label].push(player);
+    });
+    return grouped;
+  };
+
+  return (
+    <Tabs defaultValue="americas" className="w-full">
+      <TabsList className="flex flex-wrap justify-center gap-2 p-4">
+        {divisions.map((div) => (
+          <TabsTrigger
+            key={div}
+            value={div}
+            className="text-xl px-6 py-3 rounded-2xl shadow-lg bg-slate-800 text-white"
           >
-            <td class="px-4 py-2">{{ player.name || 'Anonymous' }}</td>
-            <td class="px-4 py-2">{{ player.last_match }}</td>
-            <td class="px-4 py-2">{{ player.spam_hero }}</td>
-            <td class="px-4 py-2 font-bold text-green-400">{{ player.win_streak }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</template>
+            {div.toUpperCase()}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
-
-// Sample values — you can replace this with real API when available
-const servers = ['SEA', 'EU', 'NA']
-const ranks = ['Herald', 'Guardian', 'Crusader', 'Archon', 'Legend', 'Ancient', 'Divine', 'Immortal']
-
-const currentServer = ref(servers[0])
-const currentRank = ref(ranks[0])
-const players = ref([])
-
-onMounted(async () => {
-  // Use mock data for now
-  players.value = await fetchMockPlayers()
-})
-
-const fetchMockPlayers = async () => {
-  return Array.from({ length: 100 }).map((_, i) => ({
-    account_id: i,
-    name: `Player_${i + 1}`,
-    last_match: `2025-08-${(i % 28) + 1}`,
-    spam_hero: ['Invoker', 'Pudge', 'Sniper', 'Phantom Assassin'][i % 4],
-    win_streak: Math.floor(Math.random() * 20),
-    server: servers[i % servers.length],
-    rank: ranks[i % ranks.length],
-  }))
+      {divisions.map((div) => (
+        <TabsContent key={div} value={div}>
+          <div className="p-4">
+            {Object.entries(groupByRank(data[div] || [])).map(([rank, players]) => (
+              <div key={rank} className="mb-8">
+                <h2 className={`text-2xl font-bold mb-2 ${rankColors[rank]}`}>{rank}</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white rounded shadow-md">
+                    <thead className="bg-slate-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Rank</th>
+                        <th className="px-4 py-2 text-left">Name</th>
+                        <th className="px-4 py-2 text-left">MMR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {players.map((p, idx) => (
+                        <tr key={p.account_id} className="border-b hover:bg-slate-100">
+                          <td className="px-4 py-2">#{idx + 1}</td>
+                          <td className="px-4 py-2">{p.name || "Anonymous"}</td>
+                          <td className="px-4 py-2">{p.mmr}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
 }
-
-const filteredPlayers = computed(() =>
-  players.value
-    .filter((p) => p.server === currentServer.value && p.rank === currentRank.value)
-    .sort((a, b) => b.win_streak - a.win_streak)
-    .slice(0, 20)
-)
-</script>
-
-<style scoped>
-body {
-  font-family: 'Segoe UI', sans-serif;
-}
-</style>
