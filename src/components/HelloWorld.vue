@@ -14,8 +14,8 @@ const count = ref(0)
   <div class="card">
     <button
       type="button"
-      @click="count++"
-      :style="{ fontSize: 16 + count * 2 + 'px', padding: 8 + count * 2 + 'px' }"
+      @click="() => { count++; color.value = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0') }"
+      :style="{ backgroundColor: color }"
     >
       count is {{ count }}
     </button>
