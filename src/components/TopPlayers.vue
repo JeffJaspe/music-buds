@@ -1,65 +1,105 @@
 <template>
-  <div v-if="loading">Loading...</div>
-  <div v-else>
-    <div v-for="(player, index) in players" :key="index" class="mb-4 p-4 bg-gray-800 rounded-lg">
-      <p><strong>#{{ index + 1 }} {{ player.name || 'Anonymous' }}</strong></p>
-      <p>Win Streak: {{ player.win_streak }}</p>
-      <p>Last Match: {{ new Date(player.last_match_time * 1000).toLocaleString() }}</p>
-      <p>Most Played Hero: {{ heroNames[player.spam_hero] || 'Unknown Hero' }}</p>
+  <div class="p-4 bg-gray-900 text-white min-h-screen">
+    <h1 class="text-2xl font-bold mb-4">🏆 Top Dota 2 Players by Rank & Server</h1>
+
+    <div class="flex space-x-4 mb-6">
+      <button
+        v-for="srv in servers"
+        :key="srv"
+        :class="[
+          'px-4 py-2 rounded-full transition',
+          currentServer === srv
+            ? 'bg-purple-600 text-white shadow-lg'
+            : 'bg-gray-700 hover:bg-purple-500',
+        ]"
+        @click="currentServer = srv"
+      >
+        {{ srv }}
+      </button>
+    </div>
+
+    <div class="flex space-x-4 mb-4">
+      <button
+        v-for="rank in ranks"
+        :key="rank"
+        :class="[
+          'px-4 py-2 rounded-full transition',
+          currentRank === rank
+            ? 'bg-pink-500 text-white shadow'
+            : 'bg-gray-600 hover:bg-pink-400',
+        ]"
+        @click="currentRank = rank"
+      >
+        {{ rank }}
+      </button>
+    </div>
+
+    <div class="overflow-x-auto bg-gray-800 rounded-lg p-4">
+      <table class="table-auto w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="px-4 py-2">Player Name</th>
+            <th class="px-4 py-2">Last Match</th>
+            <th class="px-4 py-2">Spam Hero</th>
+            <th class="px-4 py-2">Win Streak</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="player in filteredPlayers"
+            :key="player.account_id"
+            class="hover:bg-gray-600 transition"
+          >
+            <td class="px-4 py-2">{{ player.name || 'Anonymous' }}</td>
+            <td class="px-4 py-2">{{ player.last_match }}</td>
+            <td class="px-4 py-2">{{ player.spam_hero }}</td>
+            <td class="px-4 py-2 font-bold text-green-400">{{ player.win_streak }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
+// Sample values — you can replace this with real API when available
+const servers = ['SEA', 'EU', 'NA']
+const ranks = ['Herald', 'Guardian', 'Crusader', 'Archon', 'Legend', 'Ancient', 'Divine', 'Immortal']
+
+const currentServer = ref(servers[0])
+const currentRank = ref(ranks[0])
 const players = ref([])
-const heroNames = ref({})
-const loading = ref(true)
 
-async function fetchTopPlayers() {
-  loading.value = true
+onMounted(async () => {
+  // Use mock data for now
+  players.value = await fetchMockPlayers()
+})
 
-  // 1. Get hero names
-  const heroRes = await axios.get('https://api.opendota.com/api/heroes')
-  heroRes.data.forEach(hero => {
-    heroNames.value[hero.id] = hero.localized_name
-  })
-
-  // 2. Get top 100 players by win streak
-  const res = await axios.get('https://api.opendota.com/api/playersByRank')
-  const topPlayers = res.data
-    .filter(p => p.rank_tier !== null)
-    .slice(0, 100)
-
-  // 3. Fetch player details to find win streak, last match, and most spammed hero
-  const detailedPlayers = await Promise.all(topPlayers.slice(0, 50).map(async (p) => {
-    try {
-      const [wlRes, matchesRes, heroesRes, profileRes] = await Promise.all([
-        axios.get(`https://api.opendota.com/api/players/${p.account_id}/wl`),
-        axios.get(`https://api.opendota.com/api/players/${p.account_id}/matches?limit=1`),
-        axios.get(`https://api.opendota.com/api/players/${p.account_id}/heroes`),
-        axios.get(`https://api.opendota.com/api/players/${p.account_id}`),
-      ])
-
-      const lastMatch = matchesRes.data[0]
-      const spamHero = heroesRes.data.sort((a, b) => b.games - a.games)[0]
-
-      return {
-        name: profileRes.data.profile?.personaname,
-        last_match_time: lastMatch?.start_time,
-        win_streak: p.win_streak || 0,
-        spam_hero: spamHero?.hero_id,
-      }
-    } catch (err) {
-      return null
-    }
+const fetchMockPlayers = async () => {
+  return Array.from({ length: 100 }).map((_, i) => ({
+    account_id: i,
+    name: `Player_${i + 1}`,
+    last_match: `2025-08-${(i % 28) + 1}`,
+    spam_hero: ['Invoker', 'Pudge', 'Sniper', 'Phantom Assassin'][i % 4],
+    win_streak: Math.floor(Math.random() * 20),
+    server: servers[i % servers.length],
+    rank: ranks[i % ranks.length],
   }))
-
-  players.value = detailedPlayers.filter(Boolean).sort((a, b) => b.win_streak - a.win_streak).slice(0, 20)
-  loading.value = false
 }
 
-onMounted(fetchTopPlayers)
+const filteredPlayers = computed(() =>
+  players.value
+    .filter((p) => p.server === currentServer.value && p.rank === currentRank.value)
+    .sort((a, b) => b.win_streak - a.win_streak)
+    .slice(0, 20)
+)
 </script>
+
+<style scoped>
+body {
+  font-family: 'Segoe UI', sans-serif;
+}
+</style>
