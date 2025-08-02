@@ -5,7 +5,7 @@ import { ref } from 'vue'
 defineProps({
   msg: String,
 })
-
+1
 const count = ref(0)
 const color = ref('#ffffff')
 const isPopping = ref(false)
@@ -27,7 +27,7 @@ function handleClick() {
     <button
       type="button"
       @click="handleClick"
-      :style="{ backgroundColor: color }"
+      :style="{ backgroundColor: count === 0 ? '#808080' : color }"
       :class="{ pop: isPopping }"
       @animationend="isPopping = false"
     >
