@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div v-if="!match">
-      <label for="matchId">Enter Match ID for public matches only</label>
+      <label for="matchId">Enter Dota 2 Match ID for public matches only</label>
       <input
         v-model="matchId"
         type="text"
@@ -13,168 +13,238 @@
     </div>
 
     <div v-else>
-      <h2>Match ID: {{ match.match_id }}</h2>
-      <p>
-        Duration: {{ (match.duration / 60).toFixed(2) }} minutes<br />
-        Winner: <strong>{{ match.radiant_win ? 'Radiant Victory' : 'Dire Victory' }}</strong>
-      </p>
+      <button @click="goBack" class="back-button">← Back</button>
 
-      <div class="team">
-        <h3>Radiant - Total Kills: {{ radiantKills }}</h3>
-        <ul>
-          <li v-for="player in radiantPlayers" :key="player.account_id">
-            <img
-              :src="getHeroIcon(player.hero_id)"
-              :alt="heroMap[player.hero_id] || 'Unknown Hero'"
-              width="80"
-              @error="onImageError"
-            />
-            <span>{{ player.personaname || 'Anonymous' }}</span>
-          </li>
-        </ul>
-      </div>
+      <div class="match-container">
+        <div class="team radiant-team">
+        <h2 :class="{ winner: match.radiant_win, loser: !match.radiant_win }">
+          Radiant (Kills: {{ radiantKills }}) <span v-if="match.radiant_win"> Victory</span>
+        </h2>
 
-      <div class="team">
-        <h3>Dire - Total Kills: {{ direKills }}</h3>
-        <ul>
-          <li v-for="player in direPlayers" :key="player.account_id">
-            <img
-              :src="getHeroIcon(player.hero_id)"
-              :alt="heroMap[player.hero_id] || 'Unknown Hero'"
-              width="80"
-              @error="onImageError"
-            />
-            <span>{{ player.personaname || 'Anonymous' }}</span>
-          </li>
-        </ul>
+
+          <ul>
+            <li v-for="player in radiantPlayers" :key="player.account_id">
+              <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+              <strong>Hero:</strong>
+              <img
+                v-if="heroMap[player.hero_id]"
+                :src="`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroMap[player.hero_id]}_full.png`"
+                :alt="heroMap[player.hero_id]"
+                width="80"
+                style="vertical-align: middle;"
+              /><br />
+              <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
+              <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+              <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+              <strong>L/H:</strong> {{ player.last_hits }}/{{ player.denies }}<br />
+              <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+              <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+              <strong>Hero Healing:</strong> {{ player.hero_healing }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="vs-center">
+          <h1 class="vs-text">VS</h1>
+        </div>
+
+        <div class="team dire-team">
+        <h2 :class="{ winner: !match.radiant_win, loser: match.radiant_win }">
+          Dire (Kills: {{ direKills }}) <span v-if="!match.radiant_win"> Victory</span>
+        </h2>
+
+
+          <ul>
+            <li v-for="player in direPlayers" :key="player.account_id">
+              <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+              <strong>Hero:</strong>
+              <img
+                v-if="heroMap[player.hero_id]"
+                :src="`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroMap[player.hero_id]}_full.png`"
+                :alt="heroMap[player.hero_id]"
+                width="80"
+                style="vertical-align: middle;"
+              /><br />
+              <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
+              <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+              <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+              <strong>L/H:</strong> {{ player.last_hits }}/{{ player.denies }}<br />
+              <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+              <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+              <strong>Hero Healing:</strong> {{ player.hero_healing }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
-
 export default {
-  setup() {
-    const matchId = ref('')
-    const match = ref(null)
-    const radiantPlayers = ref([])
-    const direPlayers = ref([])
-    const heroMap = ref({})
-    const dummyImage = 'https://via.placeholder.com/80x45?text=No+Image'
-
-    const onImageError = (e) => {
-      e.target.src = dummyImage
-    }
-
-    const getHeroIcon = (heroId) => {
-      const heroName = heroMap.value[heroId]
-      return heroName
-        ? `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroName}_full.png`
-        : dummyImage
-    }
-
-    const fetchMatch = async () => {
-      if (!matchId.value) return
-      try {
-        const res = await fetch(`https://api.opendota.com/api/matches/${matchId.value}`)
-        match.value = await res.json()
-        radiantPlayers.value = match.value.players.slice(0, 5)
-        direPlayers.value = match.value.players.slice(5, 10)
-      } catch (err) {
-        console.error('Failed to fetch match data:', err)
-      }
-    }
-
-    const fetchHeroes = async () => {
-      try {
-        const res = await fetch('https://api.opendota.com/api/heroStats')
-        const heroes = await res.json()
-        heroes.forEach(hero => {
-          heroMap.value[hero.id] = hero.name.replace('npc_dota_hero_', '')
-        })
-      } catch (err) {
-        console.error('Failed to fetch hero stats:', err)
-      }
-    }
-
-    const radiantKills = computed(() =>
-      radiantPlayers.value.reduce((sum, p) => sum + (p.kills || 0), 0)
-    )
-    const direKills = computed(() =>
-      direPlayers.value.reduce((sum, p) => sum + (p.kills || 0), 0)
-    )
-
-    onMounted(() => {
-      fetchHeroes()
-    })
-
+  data() {
     return {
-      matchId,
-      match,
-      radiantPlayers,
-      direPlayers,
-      heroMap,
-      fetchMatch,
-      getHeroIcon,
-      onImageError,
-      radiantKills,
-      direKills,
-    }
+      matchId: '',
+      match: null,
+      radiantPlayers: [],
+      direPlayers: [],
+      heroMap: {},
+    };
   },
-}
+  methods: {
+    async fetchMatch() {
+      if (!this.matchId || isNaN(this.matchId)) {
+        alert('Please enter a valid Match ID.');
+        return;
+      }
+
+      try {
+        // Fetch match data
+        const response = await fetch(`https://api.opendota.com/api/matches/${this.matchId}`);
+        if (!response.ok) throw new Error('Match not found');
+        const matchData = await response.json();
+        this.match = matchData;
+
+        this.radiantPlayers = matchData.players.filter(p => p.player_slot < 128);
+        this.direPlayers = matchData.players.filter(p => p.player_slot >= 128);
+
+        // Fetch hero list
+        const heroesResponse = await fetch('https://api.opendota.com/api/heroes');
+        const heroes = await heroesResponse.json();
+        this.heroMap = heroes.reduce((map, hero) => {
+          map[hero.id] = hero.name.replace('npc_dota_hero_', '');
+          return map;
+        }, {});
+
+        // Fetch player names
+        for (let player of [...this.radiantPlayers, ...this.direPlayers]) {
+          if (player.account_id) {
+            try {
+              const playerResponse = await fetch(`https://api.opendota.com/api/players/${player.account_id}`);
+              const playerData = await playerResponse.json();
+              player.personaname = playerData.profile?.personaname || 'Anonymous';
+            } catch {
+              player.personaname = 'Anonymous';
+            }
+          } else {
+            player.personaname = 'Anonymous';
+          }
+        }
+      } catch (error) {
+        alert('Failed to fetch match data. Check Match ID or try again later.');
+        console.error(error);
+      }
+    },
+    goBack() {
+      this.match = null;
+      this.radiantPlayers = [];
+      this.direPlayers = [];
+    },
+  },
+  computed: {
+  radiantKills() {
+    return this.radiantPlayers.reduce((total, p) => total + (p.kills || 0), 0);
+  },
+  direKills() {
+    return this.direPlayers.reduce((total, p) => total + (p.kills || 0), 0);
+  },
+},
+
+};
 </script>
 
-<style scoped>
+<style>
 .container {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 50px auto;
+  padding: 20px;
   font-family: Arial, sans-serif;
+  text-align: center;
 }
 
 label {
-  display: inline-block;
-  white-space: nowrap;
-  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 1.2em;
+  margin-bottom: 8px;
 }
 
 .match-input {
-  margin: 0.5em 0 1em 0;
-  padding: 0.5em;
   width: 100%;
-  max-width: 300px;
+  padding: 18px;
+  font-size: 1.4em;
+  border: 2px solid #888;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
 }
 
 button {
-  padding: 0.5em 1em;
+  padding: 14px 28px;
+  font-size: 1.2em;
+  background-color: #3366cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.team {
-  margin-top: 2em;
+button:hover {
+  background-color: #254c99;
 }
 
-.team h3 {
-  font-size: 1.25rem;
+.back-button {
+  background-color: #888;
+  margin-bottom: 20px;
+  font-size: 1em;
+}
+
+.versus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 3em;
+  margin: 20px 0;
+}
+
+.vs-text {
+  margin: 0 8px;
   font-weight: bold;
-  margin-bottom: 0.5rem;
+}
+
+.match-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  height: 100%;
+}
+
+.team {
+  flex: 1;
+  padding: 20px;
 }
 
 .team ul {
-  list-style: none;
+  list-style-type: none;
   padding: 0;
 }
 
 .team li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
 }
 
-.team img {
-  border-radius: 6px;
-  background: #eee;
+.winner {
+  color: #2bec2b;
+  font-weight: bold;
+  font-size: xxx-large;
+   white-space: nowrap;
+}
+
+.loser {
+  color: #d62424;
+  font-weight: bold;
+  font-size: xxx-large;
+   white-space: nowrap;
 }
 </style>
