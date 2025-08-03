@@ -1,161 +1,174 @@
 <template>
-  <div class="container">
+  <div class="viewer">
     <div v-if="!match">
       <label for="matchId">Enter Match ID for public matches only</label>
       <input
-        v-model="matchId"
-        type="text"
         id="matchId"
+        v-model="matchId"
+        placeholder="Match ID"
         class="match-input"
-        placeholder="e.g. 1234567890"
       />
-      <button @click="fetchMatch">Search Match</button>
+      <button @click="fetchMatch">Search</button>
+      <p v-if="error" class="error">{{ error }}</p>
     </div>
 
     <div v-else>
-      <h1 class="versus">
-        <span :class="{'winner': match.radiant_win, 'loser': !match.radiant_win}">Radiant</span>
-        vs
-        <span :class="{'winner': !match.radiant_win, 'loser': match.radiant_win}">Dire</span>
-      </h1>
+      <div class="versus">
+        <div :class="match.radiant_win ? 'winner' : 'loser'">
+          Radiant {{ match.radiant_win ? 'Victory' : '' }}
+        </div>
+        <div>vs</div>
+        <div :class="!match.radiant_win ? 'winner' : 'loser'">
+          Dire {{ !match.radiant_win ? 'Victory' : '' }}
+        </div>
+      </div>
 
-      <div class="team-details">
-        <div>
-          <h2>Radiant</h2>
+      <div class="match-info">
+        <p><strong>Match ID:</strong> {{ match.match_id }}</p>
+        <p><strong>Duration:</strong> {{ formatDuration(match.duration) }}</p>
+        <p><strong>Game Mode:</strong> {{ match.game_mode }}</p>
+        <p><strong>Start Time:</strong> {{ formatDate(match.start_time) }}</p>
+      </div>
+
+      <div class="teams">
+        <div class="team">
+          <h3>Radiant</h3>
           <ul>
             <li v-for="player in radiantPlayers" :key="player.account_id">
-              Hero ID: {{ player.hero_id }} - Name: {{ player.personaname || 'Anonymous' }}
+              Hero ID: {{ player.hero_id }} |
+              Player: {{ player.personaname || 'Anonymous' }} |
+              Score: {{ getHeroScore(player.account_id, player.hero_id) }}
             </li>
           </ul>
         </div>
-        <div>
-          <h2>Dire</h2>
+        <div class="team">
+          <h3>Dire</h3>
           <ul>
             <li v-for="player in direPlayers" :key="player.account_id">
-              Hero ID: {{ player.hero_id }} - Name: {{ player.personaname || 'Anonymous' }}
+              Hero ID: {{ player.hero_id }} |
+              Player: {{ player.personaname || 'Anonymous' }} |
+              Score: {{ getHeroScore(player.account_id, player.hero_id) }}
             </li>
           </ul>
         </div>
+      </div>
+
+      <div class="bans">
+        <h3>Picks & Bans</h3>
+        <ul>
+          <li v-for="ban in match.picks_bans" :key="ban.order">
+            {{ ban.is_pick ? 'Pick' : 'Ban' }} - Hero ID: {{ ban.hero_id }} ({{ ban.team === 0 ? 'Radiant' : 'Dire' }})
+          </li>
+        </ul>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      matchId: '',
-      match: null,
-      radiantPlayers: [],
-      direPlayers: [],
-    };
-  },
-  methods: {
-    async fetchMatch() {
-      if (!this.matchId || isNaN(this.matchId)) {
-        alert("Please enter a valid Match ID.");
-        return;
-      }
+<script setup>
+import { ref } from 'vue'
+import axios from 'axios'
 
+const matchId = ref('')
+const match = ref(null)
+const error = ref('')
+const rankingsCache = {}
+
+const fetchMatch = async () => {
+  if (!matchId.value || isNaN(matchId.value)) {
+    error.value = 'Please enter a valid Match ID'
+    return
+  }
+  error.value = ''
+  match.value = null
+
+  try {
+    const res = await axios.get(`https://api.opendota.com/api/matches/${matchId.value}`)
+    match.value = res.data
+    await fetchAllRankings()
+  } catch (err) {
+    error.value = 'Match not found or not public'
+  }
+}
+
+const fetchAllRankings = async () => {
+  const allPlayers = match.value.players
+  for (const player of allPlayers) {
+    if (!player.account_id || player.account_id === 4294967295) continue
+    if (!rankingsCache[player.account_id]) {
       try {
-        const response = await fetch(`https://api.opendota.com/api/matches/${this.matchId}`);
-        if (!response.ok) {
-          throw new Error('Match not found');
-        }
-        const matchData = await response.json();
-        this.match = matchData;
-
-        this.radiantPlayers = matchData.players.filter(p => p.player_slot < 128);
-        this.direPlayers = matchData.players.filter(p => p.player_slot >= 128);
-
-        // Optional: Fetch player ranking info
-        for (let player of [...this.radiantPlayers, ...this.direPlayers]) {
-          if (player.account_id) {
-            try {
-              const playerResponse = await fetch(`https://api.opendota.com/api/players/${player.account_id}`);
-              const playerData = await playerResponse.json();
-              player.personaname = playerData.profile?.personaname || 'Anonymous';
-            } catch (err) {
-              player.personaname = 'Anonymous';
-            }
-          } else {
-            player.personaname = 'Anonymous';
-          }
-        }
-
-      } catch (error) {
-        alert("Failed to fetch match data. Check Match ID or try again later.");
-        console.error(error);
+        const { data } = await axios.get(`https://api.opendota.com/api/players/${player.account_id}/rankings`)
+        rankingsCache[player.account_id] = data
+      } catch {
+        rankingsCache[player.account_id] = []
       }
-    },
-  },
-};
+    }
+  }
+}
+
+const getHeroScore = (accountId, heroId) => {
+  const playerRankings = rankingsCache[accountId]
+  if (!playerRankings) return 'N/A'
+  const heroRank = playerRankings.find(r => r.hero_id === heroId)
+  return heroRank ? heroRank.score : 'N/A'
+}
+
+const radiantPlayers = computed(() => match.value?.players?.filter(p => p.isRadiant))
+const direPlayers = computed(() => match.value?.players?.filter(p => !p.isRadiant))
+
+const formatDuration = seconds => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}m ${secs}s`
+}
+
+const formatDate = timestamp => {
+  const date = new Date(timestamp * 1000)
+  return date.toLocaleString()
+}
 </script>
 
 <style>
-.container {
-  max-width: 800px;
-  margin: 50px auto;
-  padding: 20px;
+.viewer {
   font-family: Arial, sans-serif;
-  text-align: center;
+  padding: 1rem;
+  max-width: 900px;
+  margin: auto;
 }
-
-label {
-  display: block;
-  font-size: 1.2em;
-  margin-bottom: 8px;
-}
-
 .match-input {
+  font-size: 1.5rem;
+  padding: 0.5rem;
   width: 100%;
-  padding: 18px;
-  font-size: 1.4em;
-  border: 2px solid #888;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  box-sizing: border-box;
+  margin: 1rem 0;
 }
-
 button {
-  padding: 14px 28px;
-  font-size: 1.2em;
-  background-color: #3366cc;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
 }
-
-button:hover {
-  background-color: #254c99;
+.error {
+  color: red;
 }
-
 .versus {
-  font-size: 3em;
-  margin: 20px 0;
-}
-
-.winner {
-  color: #8DB600; /* Apple Green */
-  font-weight: bold;
-}
-
-.loser {
-  color: #800000; /* Maroon */
-  font-weight: bold;
-}
-
-.team-details {
   display: flex;
   justify-content: space-around;
-  margin-top: 20px;
-  text-align: left;
+  align-items: center;
+  font-size: 3rem;
+  margin: 2rem 0;
 }
-
-.team-details h2 {
-  text-align: center;
-  margin-bottom: 10px;
+.winner {
+  color: #1ccc33; /* Apple Green */
+  font-weight: bold;
+}
+.loser {
+  color: #d63c3c; /* Maroon Red */
+  opacity: 0.7;
+}
+.match-info,
+.teams,
+.bans {
+  margin: 1rem 0;
+}
+.team {
+  margin-bottom: 1rem;
 }
 </style>
