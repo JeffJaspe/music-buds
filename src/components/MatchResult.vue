@@ -13,50 +13,52 @@
     </div>
 
     <div v-else>
-     <h1 class="versus">
-  <span :class="{'winner': match.radiant_win, 'loser': !match.radiant_win}">Radiant</span>
-  <span class="vs-text">vs</span>
-  <span :class="{'winner': !match.radiant_win, 'loser': match.radiant_win}">Dire</span>
-</h1>
+        <div class="match-container">
+  <div class="team radiant-team">
+    <h2 :class="{'winner': match.radiant_win, 'loser': !match.radiant_win}">Radiant</h2>
+    <ul>
+      <li v-for="player in radiantPlayers" :key="player.account_id">
+        <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+        <strong>Hero ID:</strong> {{ player.hero_id }}<br />
+        <strong>Kills:</strong> {{ player.kills }}<br />
+        <strong>Deaths:</strong> {{ player.deaths }}<br />
+        <strong>Assists:</strong> {{ player.assists }}<br />
+        <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+        <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+        <strong>Last Hits:</strong> {{ player.last_hits }}<br />
+        <strong>Denies:</strong> {{ player.denies }}<br />
+        <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+        <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+        <strong>Hero Healing:</strong> {{ player.hero_healing }}
+      </li>
+    </ul>
+  </div>
 
-      <div class="team-details">
-        <div>
-          <ul>
-            <li v-for="player in radiantPlayers" :key="player.account_id">
-              <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br/>
-              <strong>Hero ID:</strong> {{ player.hero_id }}<br/>
-              <strong>Kills:</strong> {{ player.kills }}<br/>
-              <strong>Deaths:</strong> {{ player.deaths }}<br/>
-              <strong>Assists:</strong> {{ player.assists }}<br/>
-              <strong>GPM:</strong> {{ player.gold_per_min }}<br/>
-              <strong>XPM:</strong> {{ player.xp_per_min }}<br/>
-              <strong>Last Hits:</strong> {{ player.last_hits }}<br/>
-              <strong>Denies:</strong> {{ player.denies }}<br/>
-              <strong>Hero Damage:</strong> {{ player.hero_damage }}<br/>
-              <strong>Tower Damage:</strong> {{ player.tower_damage }}<br/>
-              <strong>Hero Healing:</strong> {{ player.hero_healing }}
-            </li>
-          </ul>
-        </div>
-        <div>
-          <ul>
-            <li v-for="player in direPlayers" :key="player.account_id">
-              <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br/>
-              <strong>Hero ID:</strong> {{ player.hero_id }}<br/>
-              <strong>Kills:</strong> {{ player.kills }}<br/>
-              <strong>Deaths:</strong> {{ player.deaths }}<br/>
-              <strong>Assists:</strong> {{ player.assists }}<br/>
-              <strong>GPM:</strong> {{ player.gold_per_min }}<br/>
-              <strong>XPM:</strong> {{ player.xp_per_min }}<br/>
-              <strong>Last Hits:</strong> {{ player.last_hits }}<br/>
-              <strong>Denies:</strong> {{ player.denies }}<br/>
-              <strong>Hero Damage:</strong> {{ player.hero_damage }}<br/>
-              <strong>Tower Damage:</strong> {{ player.tower_damage }}<br/>
-              <strong>Hero Healing:</strong> {{ player.hero_healing }}
-            </li>
-          </ul>
-        </div>
-      </div>
+  <div class="vs-center">
+    <h1 class="vs-text">VS</h1>
+  </div>
+
+  <div class="team dire-team">
+    <h2 :class="{'winner': !match.radiant_win, 'loser': match.radiant_win}">Dire</h2>
+    <ul>
+      <li v-for="player in direPlayers" :key="player.account_id">
+        <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+        <strong>Hero ID:</strong> {{ player.hero_id }}<br />
+        <strong>Kills:</strong> {{ player.kills }}<br />
+        <strong>Deaths:</strong> {{ player.deaths }}<br />
+        <strong>Assists:</strong> {{ player.assists }}<br />
+        <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+        <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+        <strong>Last Hits:</strong> {{ player.last_hits }}<br />
+        <strong>Denies:</strong> {{ player.denies }}<br />
+        <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+        <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+        <strong>Hero Healing:</strong> {{ player.hero_healing }}
+      </li>
+    </ul>
+  </div>
+</div>
+
     </div>
   </div>
 </template>
