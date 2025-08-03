@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div v-if="!match">
-      <label for="matchId">Enter Match ID for public matches only</label>
+      <label for="matchId">Enter Dota 2 Match ID for public matches only</label>
       <input
         v-model="matchId"
         type="text"
