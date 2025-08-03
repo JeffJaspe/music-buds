@@ -13,9 +13,14 @@
     </div>
 
     <div v-else>
+      <button @click="goBack" class="back-button">← Back</button>
+
       <div class="match-container">
         <div class="team radiant-team">
-          <h2 :class="{ winner: match.radiant_win, loser: !match.radiant_win }">Radiant</h2>
+          <h2 :class="{ winner: match.radiant_win, loser: !match.radiant_win }">
+            Radiant <span v-if="match.radiant_win">- Victory</span>
+          </h2>
+
           <ul>
             <li v-for="player in radiantPlayers" :key="player.account_id">
               <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
@@ -43,7 +48,10 @@
         </div>
 
         <div class="team dire-team">
-          <h2 :class="{ winner: !match.radiant_win, loser: match.radiant_win }">Dire</h2>
+          <h2 :class="{ winner: !match.radiant_win, loser: match.radiant_win }">
+            Dire <span v-if="!match.radiant_win">- Victory</span>
+          </h2>
+
           <ul>
             <li v-for="player in direPlayers" :key="player.account_id">
               <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
@@ -91,9 +99,7 @@ export default {
       try {
         // Fetch match data
         const response = await fetch(`https://api.opendota.com/api/matches/${this.matchId}`);
-        if (!response.ok) {
-          throw new Error('Match not found');
-        }
+        if (!response.ok) throw new Error('Match not found');
         const matchData = await response.json();
         this.match = matchData;
 
@@ -126,6 +132,11 @@ export default {
         alert('Failed to fetch match data. Check Match ID or try again later.');
         console.error(error);
       }
+    },
+    goBack() {
+      this.match = null;
+      this.radiantPlayers = [];
+      this.direPlayers = [];
     },
   },
 };
@@ -168,6 +179,12 @@ button {
 
 button:hover {
   background-color: #254c99;
+}
+
+.back-button {
+  background-color: #888;
+  margin-bottom: 20px;
+  font-size: 1em;
 }
 
 .versus {
