@@ -66,8 +66,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, onMounted, computed  } from 'vue'
 import axios from 'axios'
+
+
 
 const matchId = ref('')
 const match = ref(null)
