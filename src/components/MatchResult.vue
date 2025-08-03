@@ -203,4 +203,15 @@ button:hover {
   font-weight: bold;
 }
 
+.match-container {
+  display: flex;
+  flex-direction: column;     /* Stack children vertically */
+  justify-content: space-between; /* Add space between them vertically */
+  height: 100%;               /* Or use a specific height like 100vh if needed */
+}
+.team {
+  flex: 1; /* Allow teams to take equal space */
+  padding: 20px;
+}
+
 </style>
