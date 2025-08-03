@@ -6,5 +6,5 @@
 </template>
 
 <script setup>
-import TopPlayers from './components/TopPlayers.vue'
+import MatchResult from './components/MatchResult.vue'
 </script>
