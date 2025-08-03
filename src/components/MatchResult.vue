@@ -16,20 +16,26 @@
       <div class="match-container">
         <div class="team radiant-team">
           <h2 :class="{ winner: match.radiant_win, loser: !match.radiant_win }">Radiant</h2>
-            <ul>
-              <li v-for="player in radiantPlayers" :key="player.account_id">
-                <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
-                <strong>Hero ID:</strong> {{ player.hero_id }}<br />
-                <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
-                <strong>GPM:</strong> {{ player.gold_per_min }}<br />
-                <strong>XPM:</strong> {{ player.xp_per_min }}<br />
-                <strong>L/H:</strong> {{ player.last_hits }}/{{ player.denies }}<br />
-                <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
-                <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
-                <strong>Hero Healing:</strong> {{ player.hero_healing }}
-              </li>
-            </ul>
-
+          <ul>
+            <li v-for="player in radiantPlayers" :key="player.account_id">
+              <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+              <strong>Hero:</strong>
+              <img
+                v-if="heroMap[player.hero_id]"
+                :src="`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroMap[player.hero_id]}_full.png`"
+                :alt="heroMap[player.hero_id]"
+                width="80"
+                style="vertical-align: middle;"
+              /><br />
+              <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
+              <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+              <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+              <strong>L/H:</strong> {{ player.last_hits }}/{{ player.denies }}<br />
+              <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+              <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+              <strong>Hero Healing:</strong> {{ player.hero_healing }}
+            </li>
+          </ul>
         </div>
 
         <div class="vs-center">
@@ -41,7 +47,14 @@
           <ul>
             <li v-for="player in direPlayers" :key="player.account_id">
               <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
-              <strong>Hero ID:</strong> {{ player.hero_id }}<br />
+              <strong>Hero:</strong>
+              <img
+                v-if="heroMap[player.hero_id]"
+                :src="`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroMap[player.hero_id]}_full.png`"
+                :alt="heroMap[player.hero_id]"
+                width="80"
+                style="vertical-align: middle;"
+              /><br />
               <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
               <strong>GPM:</strong> {{ player.gold_per_min }}<br />
               <strong>XPM:</strong> {{ player.xp_per_min }}<br />
@@ -51,7 +64,6 @@
               <strong>Hero Healing:</strong> {{ player.hero_healing }}
             </li>
           </ul>
-
         </div>
       </div>
     </div>
@@ -66,6 +78,7 @@ export default {
       match: null,
       radiantPlayers: [],
       direPlayers: [],
+      heroMap: {},
     };
   },
   methods: {
@@ -76,6 +89,7 @@ export default {
       }
 
       try {
+        // Fetch match data
         const response = await fetch(`https://api.opendota.com/api/matches/${this.matchId}`);
         if (!response.ok) {
           throw new Error('Match not found');
@@ -86,6 +100,15 @@ export default {
         this.radiantPlayers = matchData.players.filter(p => p.player_slot < 128);
         this.direPlayers = matchData.players.filter(p => p.player_slot >= 128);
 
+        // Fetch hero list
+        const heroesResponse = await fetch('https://api.opendota.com/api/heroes');
+        const heroes = await heroesResponse.json();
+        this.heroMap = heroes.reduce((map, hero) => {
+          map[hero.id] = hero.name.replace('npc_dota_hero_', '');
+          return map;
+        }, {});
+
+        // Fetch player names
         for (let player of [...this.radiantPlayers, ...this.direPlayers]) {
           if (player.account_id) {
             try {
@@ -172,25 +195,12 @@ button:hover {
   padding: 20px;
 }
 
-.team-details {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 20px;
-  text-align: left;
-  gap: 40px;
-}
-
-.team-details h2 {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.team-details ul {
+.team ul {
   list-style-type: none;
   padding: 0;
 }
 
-.team-details li {
+.team li {
   margin-bottom: 20px;
   border-bottom: 1px solid #ccc;
   padding-bottom: 10px;
