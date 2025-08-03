@@ -18,7 +18,7 @@
       <div class="match-container">
         <div class="team radiant-team">
           <h2 :class="{ winner: match.radiant_win, loser: !match.radiant_win }">
-            Radiant <span v-if="match.radiant_win">- Victory</span>
+            Radiant <span v-if="match.radiant_win"> Victory</span>
           </h2>
 
           <ul>
@@ -49,7 +49,7 @@
 
         <div class="team dire-team">
           <h2 :class="{ winner: !match.radiant_win, loser: match.radiant_win }">
-            Dire <span v-if="!match.radiant_win">- Victory</span>
+            Dire <span v-if="!match.radiant_win"> Victory</span>
           </h2>
 
           <ul>
@@ -227,11 +227,13 @@ button:hover {
   color: #2bec2b;
   font-weight: bold;
   font-size: xxx-large;
+   white-space: nowrap;
 }
 
 .loser {
   color: #d62424;
   font-weight: bold;
   font-size: xxx-large;
+   white-space: nowrap;
 }
 </style>
