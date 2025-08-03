@@ -13,52 +13,47 @@
     </div>
 
     <div v-else>
-        <div class="match-container">
-  <div class="team radiant-team">
-    <h2 :class="{'winner': match.radiant_win, 'loser': !match.radiant_win}">Radiant</h2>
-    <ul>
-      <li v-for="player in radiantPlayers" :key="player.account_id">
-        <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
-        <strong>Hero ID:</strong> {{ player.hero_id }}<br />
-        <strong>Kills:</strong> {{ player.kills }}<br />
-        <strong>Deaths:</strong> {{ player.deaths }}<br />
-        <strong>Assists:</strong> {{ player.assists }}<br />
-        <strong>GPM:</strong> {{ player.gold_per_min }}<br />
-        <strong>XPM:</strong> {{ player.xp_per_min }}<br />
-        <strong>Last Hits:</strong> {{ player.last_hits }}<br />
-        <strong>Denies:</strong> {{ player.denies }}<br />
-        <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
-        <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
-        <strong>Hero Healing:</strong> {{ player.hero_healing }}
-      </li>
-    </ul>
-  </div>
+      <div class="match-container">
+        <div class="team radiant-team">
+          <h2 :class="{ winner: match.radiant_win, loser: !match.radiant_win }">Radiant</h2>
+            <ul>
+              <li v-for="player in radiantPlayers" :key="player.account_id">
+                <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+                <strong>Hero ID:</strong> {{ player.hero_id }}<br />
+                <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
+                <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+                <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+                <strong>L/H:</strong> {{ player.last_hits }}/{{ player.denies }}<br />
+                <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+                <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+                <strong>Hero Healing:</strong> {{ player.hero_healing }}
+              </li>
+            </ul>
 
-  <div class="vs-center">
-    <h1 class="vs-text">VS</h1>
-  </div>
+        </div>
 
-  <div class="team dire-team">
-    <h2 :class="{'winner': !match.radiant_win, 'loser': match.radiant_win}">Dire</h2>
-    <ul>
-      <li v-for="player in direPlayers" :key="player.account_id">
-        <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
-        <strong>Hero ID:</strong> {{ player.hero_id }}<br />
-        <strong>Kills:</strong> {{ player.kills }}<br />
-        <strong>Deaths:</strong> {{ player.deaths }}<br />
-        <strong>Assists:</strong> {{ player.assists }}<br />
-        <strong>GPM:</strong> {{ player.gold_per_min }}<br />
-        <strong>XPM:</strong> {{ player.xp_per_min }}<br />
-        <strong>Last Hits:</strong> {{ player.last_hits }}<br />
-        <strong>Denies:</strong> {{ player.denies }}<br />
-        <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
-        <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
-        <strong>Hero Healing:</strong> {{ player.hero_healing }}
-      </li>
-    </ul>
-  </div>
-</div>
+        <div class="vs-center">
+          <h1 class="vs-text">VS</h1>
+        </div>
 
+        <div class="team dire-team">
+          <h2 :class="{ winner: !match.radiant_win, loser: match.radiant_win }">Dire</h2>
+          <ul>
+            <li v-for="player in direPlayers" :key="player.account_id">
+              <strong>Name:</strong> {{ player.personaname || 'Anonymous' }}<br />
+              <strong>Hero ID:</strong> {{ player.hero_id }}<br />
+              <strong>K/D/A:</strong> {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}<br />
+              <strong>GPM:</strong> {{ player.gold_per_min }}<br />
+              <strong>XPM:</strong> {{ player.xp_per_min }}<br />
+              <strong>L/H:</strong> {{ player.last_hits }}/{{ player.denies }}<br />
+              <strong>Hero Damage:</strong> {{ player.hero_damage }}<br />
+              <strong>Tower Damage:</strong> {{ player.tower_damage }}<br />
+              <strong>Hero Healing:</strong> {{ player.hero_healing }}
+            </li>
+          </ul>
+
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -76,7 +71,7 @@ export default {
   methods: {
     async fetchMatch() {
       if (!this.matchId || isNaN(this.matchId)) {
-        alert("Please enter a valid Match ID.");
+        alert('Please enter a valid Match ID.');
         return;
       }
 
@@ -97,16 +92,15 @@ export default {
               const playerResponse = await fetch(`https://api.opendota.com/api/players/${player.account_id}`);
               const playerData = await playerResponse.json();
               player.personaname = playerData.profile?.personaname || 'Anonymous';
-            } catch (err) {
+            } catch {
               player.personaname = 'Anonymous';
             }
           } else {
             player.personaname = 'Anonymous';
           }
         }
-
       } catch (error) {
-        alert("Failed to fetch match data. Check Match ID or try again later.");
+        alert('Failed to fetch match data. Check Match ID or try again later.');
         console.error(error);
       }
     },
@@ -154,18 +148,28 @@ button:hover {
 }
 
 .versus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 3em;
   margin: 20px 0;
 }
 
-.winner {
-  color: #2bec2b; /* Apple Green */
+.vs-text {
+  margin: 0 8px;
   font-weight: bold;
 }
 
-.loser {
-  color: #d62424; /* Maroon */
-  font-weight: bold;
+.match-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  height: 100%;
+}
+
+.team {
+  flex: 1;
+  padding: 20px;
 }
 
 .team-details {
@@ -192,26 +196,15 @@ button:hover {
   padding-bottom: 10px;
 }
 
-.versus {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem; /* adds spacing between children */
-}
-
-.vs-text {
-  margin: 0 8px; /* horizontal spacing */
+.winner {
+  color: #2bec2b;
   font-weight: bold;
+  font-size: xxx-large;
 }
 
-.match-container {
-  display: flex;
-  flex-direction: column;     /* Stack children vertically */
-  justify-content: space-between; /* Add space between them vertically */
-  height: 100%;               /* Or use a specific height like 100vh if needed */
+.loser {
+  color: #d62424;
+  font-weight: bold;
+  font-size: xxx-large;
 }
-.team {
-  flex: 1; /* Allow teams to take equal space */
-  padding: 20px;
-}
-
 </style>
