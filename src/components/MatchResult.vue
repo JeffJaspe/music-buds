@@ -1,86 +1,100 @@
 <template>
-  <div class="p-6 space-y-6 bg-gray-100 min-h-screen">
-    <div class="flex gap-4 items-center">
-      <input
-        v-model="matchId"
-        type="text"
-        placeholder="Enter Match ID"
-        class="px-4 py-2 border rounded w-64"
-      />
-      <button @click="fetchMatch" class="bg-blue-600 text-white px-4 py-2 rounded">
-        Fetch Match
-      </button>
-    </div>
+  <div class="container">
+    <label for="matchId">Enter Match ID for public matches only</label>
+    <input
+      v-model="matchId"
+      type="text"
+      id="matchId"
+      class="match-input"
+      placeholder="e.g. 1234567890"
+    />
+    <button @click="fetchMatch">Search Match</button>
 
-    <div v-if="match" class="mt-6">
-      <div class="flex justify-between">
-        <!-- Radiant Team -->
-        <div class="w-1/2 p-4 text-center" :class="match.radiant_win ? 'bg-green-200' : 'bg-red-200'">
-          <h2 class="text-3xl font-bold">Radiant</h2>
-          <p class="text-xl font-semibold mt-2" :class="match.radiant_win ? 'text-green-800' : 'text-red-800'">
-            {{ match.radiant_win ? 'WINNER' : 'LOSER' }}
-          </p>
-          <ul class="mt-4 space-y-2">
-            <li v-for="player in radiantPlayers" :key="player.account_id">
-              {{ player.personaname || 'Anonymous' }} ({{ player.kills }}/{{ player.deaths }}/{{ player.assists }})
-            </li>
-          </ul>
-        </div>
+    <div v-if="match">
+      <h2>Match ID: {{ match.match_id }}</h2>
+      <p>Radiant Score: {{ match.radiant_score }}</p>
+      <p>Dire Score: {{ match.dire_score }}</p>
+      <p>Winner: {{ match.radiant_win ? 'Radiant' : 'Dire' }}</p>
+      <p>Game Mode: {{ match.game_mode }}</p>
+      <p>Lobby Type: {{ match.lobby_type }}</p>
+      <p>Duration: {{ Math.floor(match.duration / 60) }} minutes</p>
+      <p>Start Time: {{ new Date(match.start_time * 1000).toLocaleString() }}</p>
 
-        <!-- Dire Team -->
-        <div class="w-1/2 p-4 text-center" :class="!match.radiant_win ? 'bg-green-200' : 'bg-red-200'">
-          <h2 class="text-3xl font-bold">Dire</h2>
-          <p class="text-xl font-semibold mt-2" :class="!match.radiant_win ? 'text-green-800' : 'text-red-800'">
-            {{ !match.radiant_win ? 'WINNER' : 'LOSER' }}
-          </p>
-          <ul class="mt-4 space-y-2">
-            <li v-for="player in direPlayers" :key="player.account_id">
-              {{ player.personaname || 'Anonymous' }} ({{ player.kills }}/{{ player.deaths }}/{{ player.assists }})
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Match Details -->
-      <div class="mt-6 bg-white p-4 rounded shadow">
-        <h3 class="text-xl font-semibold mb-2">Match Details</h3>
-        <p><strong>Match ID:</strong> {{ match.match_id }}</p>
-        <p><strong>Duration:</strong> {{ Math.floor(match.duration / 60) }} min</p>
-        <p><strong>Radiant Score:</strong> {{ match.radiant_score }}</p>
-        <p><strong>Dire Score:</strong> {{ match.dire_score }}</p>
-        <p><strong>Game Mode:</strong> {{ match.game_mode }}</p>
-      </div>
+      <h3>Players</h3>
+      <ul>
+        <li v-for="player in match.players" :key="player.account_id">
+          Hero ID: {{ player.hero_id }} - K/D/A: {{ player.kills }}/{{ player.deaths }}/{{ player.assists }}
+        </li>
+      </ul>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import axios from 'axios';
+<script>
+export default {
+  data() {
+    return {
+      matchId: '',
+      match: null,
+    };
+  },
+  methods: {
+    async fetchMatch() {
+      if (!this.matchId || isNaN(this.matchId)) {
+        alert("Please enter a valid Match ID.");
+        return;
+      }
 
-const matchId = ref('');
-const match = ref(null);
-const radiantPlayers = ref([]);
-const direPlayers = ref([]);
-
-const fetchMatch = async () => {
-  if (!matchId.value) return;
-  try {
-    const res = await axios.get(`https://api.opendota.com/api/matches/${matchId.value}`);
-    match.value = res.data;
-    radiantPlayers.value = res.data.players.filter(p => p.isRadiant);
-    direPlayers.value = res.data.players.filter(p => !p.isRadiant);
-  } catch (error) {
-    console.error('Failed to fetch match:', error);
-    match.value = null;
-    radiantPlayers.value = [];
-    direPlayers.value = [];
-  }
+      try {
+        const response = await fetch(`https://api.opendota.com/api/matches/${this.matchId}`);
+        if (!response.ok) {
+          throw new Error('Match not found');
+        }
+        this.match = await response.json();
+      } catch (error) {
+        alert("Failed to fetch match data. Check Match ID or try again later.");
+        console.error(error);
+      }
+    },
+  },
 };
 </script>
 
 <style>
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+label {
+  display: block;
+  font-size: 1.2em;
+  margin-bottom: 8px;
+}
+
+.match-input {
+  width: 100%;
+  padding: 18px;
+  font-size: 1.4em;
+  border: 2px solid #888;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 14px 28px;
+  font-size: 1.2em;
+  background-color: #3366cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #254c99;
 }
 </style>
